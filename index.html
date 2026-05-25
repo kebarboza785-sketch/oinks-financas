@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>oink's — finanças pessoais</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Mono:wght@300;400;500&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">🐷</div>
+        <div class="logo-text">
+          oink's
+          <span>finanças pessoais</span>
+        </div>
+      </div>
+      <button class="sidebar-toggle" id="sidebarToggle" title="Recolher menu">
+        <i class="ph ph-sidebar-simple"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <span class="nav-label">Principal</span>
+      <a href="#" class="nav-item active" data-section="dashboard">
+        <i class="ph-fill ph-squares-four"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-section="transactions">
+        <i class="ph ph-arrows-left-right"></i>
+        <span>Transações</span>
+      </a>
+      <a href="#" class="nav-item" data-section="add">
+        <i class="ph ph-plus-circle"></i>
+        <span>Novo Registro</span>
+      </a>
+
+      <span class="nav-label" style="margin-top:1.5rem">Análise</span>
+      <a href="#" class="nav-item" data-section="chart">
+        <i class="ph ph-chart-bar"></i>
+        <span>Gráficos</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar">U</div>
+        <div class="user-info">
+          <span class="user-name">Usuário</span>
+          <span class="user-role">conta pessoal</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ OVERLAY (mobile) ═══ -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- ═══ MAIN CONTENT ═══ -->
+  <main class="main" id="main">
+
+    <!-- Header -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" id="menuBtn">
+          <i class="ph ph-list"></i>
+        </button>
+        <div class="breadcrumb" id="pageTitle">Dashboard</div>
+        <span class="brand-tag">🐷 oink's</span>
+      </div>
+      <div class="topbar-right">
+        <div class="search-wrap">
+          <i class="ph ph-magnifying-glass"></i>
+          <input type="text" id="globalSearch" placeholder="Pesquisar registros…" autocomplete="off" />
+        </div>
+        <button class="icon-btn" title="Notificações"><i class="ph ph-bell"></i></button>
+        <button class="icon-btn" title="Configurações"><i class="ph ph-gear"></i></button>
+      </div>
+    </header>
+
+    <!-- ─── SECTION: Dashboard ─── -->
+    <section class="section active" id="sec-dashboard">
+      <div class="section-header">
+        <h1><em>Visão Geral</em></h1>
+        <p>// resumo financeiro · período atual</p>
+      </div>
+
+      <!-- Hero banner -->
+      <div class="dashboard-hero">
+        <div class="hero-text">
+          <h2>Olá, bem-vindo ao <em>oink's</em> 🐷</h2>
+          <p>// suas finanças organizadas, do seu jeito</p>
+        </div>
+        <div class="hero-badge">
+          🐷 <span>oink's</span>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-balance">
+          <div class="kpi-icon"><i class="ph-fill ph-wallet"></i></div>
+          <div class="kpi-body">
+            <span class="kpi-label">Saldo Total</span>
+            <span class="kpi-value" id="kpiBalance">R$ 0,00</span>
+            <span class="kpi-sub" id="kpiBalanceSub">—</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-income">
+          <div class="kpi-icon"><i class="ph-fill ph-trend-up"></i></div>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Receitas</span>
+            <span class="kpi-value" id="kpiIncome">R$ 0,00</span>
+            <span class="kpi-sub" id="kpiIncomeSub">0 entradas</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-expense">
+          <div class="kpi-icon"><i class="ph-fill ph-trend-down"></i></div>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Despesas</span>
+            <span class="kpi-value" id="kpiExpense">R$ 0,00</span>
+            <span class="kpi-sub" id="kpiExpenseSub">0 saídas</span>
+          </div>
+        </div>
+        <div class="kpi-card kpi-records">
+          <div class="kpi-icon"><i class="ph-fill ph-receipt"></i></div>
+          <div class="kpi-body">
+            <span class="kpi-label">Registros</span>
+            <span class="kpi-value" id="kpiCount">0</span>
+            <span class="kpi-sub" id="kpiCountSub">no total</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart + Recent -->
+      <div class="dashboard-grid">
+        <div class="card chart-card">
+          <div class="card-header">
+            <span>Receitas vs Despesas</span>
+            <div class="chart-legend">
+              <span class="legend-dot income"></span>receitas
+              <span class="legend-dot expense"></span>despesas
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="mainChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card recent-card">
+          <div class="card-header">
+            <span>Últimas Transações</span>
+            <a href="#" class="card-link" data-goto="transactions">ver todas →</a>
+          </div>
+          <ul class="recent-list" id="recentList">
+            <li class="empty-state">
+              <i class="ph ph-receipt"></i>
+              <span>nenhum registro ainda</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Category breakdown -->
+      <div class="card category-card" style="margin-top:16px">
+        <div class="card-header">
+          <span>Por Categoria</span>
+        </div>
+        <div class="category-grid" id="categoryGrid">
+          <p class="placeholder-text">adicione registros para ver categorias.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── SECTION: Transactions ─── -->
+    <section class="section" id="sec-transactions">
+      <div class="section-header">
+        <h1><em>Transações</em></h1>
+        <p>// todos os registros financeiros</p>
+      </div>
+
+      <div class="card">
+        <div class="filters-bar">
+          <div class="filter-group">
+            <select id="filterType" class="filter-select">
+              <option value="all">todos os tipos</option>
+              <option value="receita">receitas</option>
+              <option value="despesa">despesas</option>
+            </select>
+            <select id="filterCategory" class="filter-select">
+              <option value="all">todas as categorias</option>
+            </select>
+          </div>
+          <div class="filter-search">
+            <i class="ph ph-magnifying-glass"></i>
+            <input type="text" id="tableSearch" placeholder="buscar…" />
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table" id="transactionsTable">
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th>Tipo</th>
+                <th>Data</th>
+                <th class="align-right">Valor</th>
+                <th class="align-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="transactionsBody">
+              <tr class="empty-row">
+                <td colspan="6">
+                  <div class="empty-state">
+                    <i class="ph ph-database"></i>
+                    <span>nenhuma transação encontrada</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── SECTION: Add Record ─── -->
+    <section class="section" id="sec-add">
+      <div class="section-header">
+        <h1><em>Novo Registro</em></h1>
+        <p>// adicione uma nova transação</p>
+      </div>
+
+      <div class="form-layout">
+        <div class="card form-card">
+          <form id="financeForm" novalidate>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="desc">Descrição <span class="req">*</span></label>
+                <div class="input-wrap">
+                  <i class="ph ph-text-aa"></i>
+                  <input type="text" id="desc" placeholder="Ex: Salário mensal, Conta de luz…" maxlength="100" />
+                </div>
+                <span class="field-error" id="descErr"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="amount">Valor <span class="req">*</span></label>
+                <div class="input-wrap">
+                  <i class="ph ph-currency-dollar-simple"></i>
+                  <input type="text" id="amount" placeholder="0,00" inputmode="decimal" />
+                </div>
+                <span class="field-error" id="amountErr"></span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="type">Tipo <span class="req">*</span></label>
+                <div class="input-wrap select-wrap">
+                  <i class="ph ph-arrows-left-right"></i>
+                  <select id="type">
+                    <option value="">selecione…</option>
+                    <option value="receita">💚 Receita</option>
+                    <option value="despesa">🔴 Despesa</option>
+                  </select>
+                </div>
+                <span class="field-error" id="typeErr"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="category">Categoria <span class="req">*</span></label>
+                <div class="input-wrap select-wrap">
+                  <i class="ph ph-tag"></i>
+                  <select id="category">
+                    <option value="">selecione…</option>
+                    <optgroup label="Receitas">
+                      <option value="Salário">Salário</option>
+                      <option value="Freelance">Freelance</option>
+                      <option value="Investimentos">Investimentos</option>
+                      <option value="Outros (Receita)">Outros</option>
+                    </optgroup>
+                    <optgroup label="Despesas">
+                      <option value="Moradia">Moradia</option>
+                      <option value="Alimentação">Alimentação</option>
+                      <option value="Transporte">Transporte</option>
+                      <option value="Saúde">Saúde</option>
+                      <option value="Educação">Educação</option>
+                      <option value="Lazer">Lazer</option>
+                      <option value="Outros (Despesa)">Outros</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <span class="field-error" id="categoryErr"></span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="date">Data <span class="req">*</span></label>
+                <div class="input-wrap">
+                  <i class="ph ph-calendar-blank"></i>
+                  <input type="date" id="date" />
+                </div>
+                <span class="field-error" id="dateErr"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="notes">Observações</label>
+                <div class="input-wrap">
+                  <i class="ph ph-note-pencil"></i>
+                  <input type="text" id="notes" placeholder="opcional…" maxlength="200" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" id="clearBtn">
+                <i class="ph ph-eraser"></i> Limpar
+              </button>
+              <button type="submit" class="btn btn-primary" id="submitBtn">
+                <i class="ph ph-floppy-disk"></i>
+                <span>Salvar Registro</span>
+                <div class="btn-loader" id="btnLoader"></div>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Quick tips -->
+        <div class="card tips-card">
+          <div class="card-header"><span>💡 Dicas</span></div>
+          <ul class="tips-list">
+            <li><i class="ph-fill ph-check-circle"></i> Use descrições claras para encontrar registros facilmente.</li>
+            <li><i class="ph-fill ph-check-circle"></i> Categorize corretamente para análises precisas.</li>
+            <li><i class="ph-fill ph-check-circle"></i> Registre toda saída, mesmo as pequenas.</li>
+            <li><i class="ph-fill ph-check-circle"></i> Edite ou exclua registros na aba Transações.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── SECTION: Chart ─── -->
+    <section class="section" id="sec-chart">
+      <div class="section-header">
+        <h1><em>Gráficos e Análise</em></h1>
+        <p>// visualize seu histórico financeiro</p>
+      </div>
+
+      <div class="charts-grid">
+        <div class="card chart-full-card">
+          <div class="card-header">
+            <span>Histórico Mensal</span>
+          </div>
+          <div class="chart-wrap tall">
+            <canvas id="lineChart"></canvas>
+          </div>
+        </div>
+
+        <div class="charts-bottom">
+          <div class="card">
+            <div class="card-header"><span>Distribuição por Categoria</span></div>
+            <div class="chart-wrap medium">
+              <canvas id="donutChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><span>Receitas vs Despesas</span></div>
+            <div class="chart-wrap medium">
+              <canvas id="barChart2"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══ TOAST NOTIFICATION ═══ -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ═══ MODAL: Edit Record ═══ -->
+  <div class="modal-backdrop" id="editModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Editar Registro</h2>
+        <button class="modal-close" id="modalClose"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="editForm" novalidate>
+          <input type="hidden" id="editId" />
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editDesc">Descrição</label>
+              <div class="input-wrap">
+                <i class="ph ph-text-aa"></i>
+                <input type="text" id="editDesc" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="editAmount">Valor</label>
+              <div class="input-wrap">
+                <i class="ph ph-currency-dollar-simple"></i>
+                <input type="text" id="editAmount" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editType">Tipo</label>
+              <div class="input-wrap select-wrap">
+                <i class="ph ph-arrows-left-right"></i>
+                <select id="editType">
+                  <option value="receita">Receita</option>
+                  <option value="despesa">Despesa</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="editCategory">Categoria</label>
+              <div class="input-wrap select-wrap">
+                <i class="ph ph-tag"></i>
+                <select id="editCategory">
+                  <option value="Salário">Salário</option>
+                  <option value="Freelance">Freelance</option>
+                  <option value="Investimentos">Investimentos</option>
+                  <option value="Moradia">Moradia</option>
+                  <option value="Alimentação">Alimentação</option>
+                  <option value="Transporte">Transporte</option>
+                  <option value="Saúde">Saúde</option>
+                  <option value="Educação">Educação</option>
+                  <option value="Lazer">Lazer</option>
+                  <option value="Outros (Receita)">Outros (Receita)</option>
+                  <option value="Outros (Despesa)">Outros (Despesa)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editDate">Data</label>
+              <div class="input-wrap">
+                <i class="ph ph-calendar-blank"></i>
+                <input type="date" id="editDate" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="editNotes">Observações</label>
+              <div class="input-wrap">
+                <i class="ph ph-note-pencil"></i>
+                <input type="text" id="editNotes" />
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" id="cancelEdit">Cancelar</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="ph ph-floppy-disk"></i> Salvar Alterações
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODAL: Confirm Delete ═══ -->
+  <div class="modal-backdrop" id="confirmModal">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2>Confirmar Exclusão</h2>
+        <button class="modal-close" id="confirmClose"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="confirm-icon"><i class="ph-fill ph-trash"></i></div>
+        <p class="confirm-text">Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.</p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="cancelDelete">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmDelete">
+            <i class="ph ph-trash"></i> Excluir
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
