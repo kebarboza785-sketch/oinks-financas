@@ -6,50 +6,50 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Mono:wght@300;400;500&family=Nunito:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* ── Core Palette: Moss & Bone ── */
-  --moss-darkest:  #1a2318;
-  --moss-dark:     #2d3d28;
-  --moss:          #3d5436;
-  --moss-mid:      #4f6b43;
-  --moss-light:    #6b8c5a;
-  --moss-soft:     #8aab74;
-  --moss-pale:     #b5cc9f;
-  --moss-mist:     #d4e4c8;
-  --moss-whisper:  #eef4e8;
+  /* ── Core Palette: Light Moss & Warm Beige ── */
+  --moss-darkest:  #2e4a2a;
+  --moss-dark:     #4a7042;
+  --moss:          #5c8a52;
+  --moss-mid:      #74a468;
+  --moss-light:    #8fbe82;
+  --moss-soft:     #aed4a0;
+  --moss-pale:     #cce8c2;
+  --moss-mist:     #dff0d8;
+  --moss-whisper:  #eef8e8;
 
-  --bone-deep:     #c8b89a;
-  --bone:          #d9c9ab;
-  --bone-light:    #e8dcc6;
-  --bone-soft:     #f0e8d8;
-  --bone-pale:     #f6f0e4;
-  --bone-whisper:  #faf6ee;
-  --cream:         #fefcf7;
+  --bone-deep:     #c9b99a;
+  --bone:          #daccb0;
+  --bone-light:    #e8ddc8;
+  --bone-soft:     #f0e8d5;
+  --bone-pale:     #f7f1e3;
+  --bone-whisper:  #faf6ec;
+  --cream:         #fefdf8;
 
   /* ── Semantic ── */
-  --bg-base:       #f6f0e4;
-  --bg-surface:    #faf6ee;
-  --bg-elevated:   #fefcf7;
-  --bg-hover:      #eef4e8;
+  --bg-base:       #f2ece0;
+  --bg-surface:    #f8f3e8;
+  --bg-elevated:   #fefdf8;
+  --bg-hover:      #e8f4e2;
 
-  --text-primary:  #1a2318;
-  --text-secondary:#4f6b43;
-  --text-muted:    #8aab74;
-  --text-subtle:   #b5cc9f;
+  --text-primary:  #253d20;
+  --text-secondary:#5c8a52;
+  --text-muted:    #8fbe82;
+  --text-subtle:   #b8d8ae;
 
-  --accent:        #3d5436;
-  --accent-soft:   rgba(61, 84, 54, 0.12);
-  --accent-glow:   rgba(61, 84, 54, 0.20);
+  --accent:        #5c8a52;
+  --accent-soft:   rgba(92, 138, 82, 0.12);
+  --accent-glow:   rgba(92, 138, 82, 0.22);
 
-  --income:        #4f6b43;
-  --income-dim:    rgba(79, 107, 67, 0.12);
+  --income:        #5c8a52;
+  --income-dim:    rgba(92, 138, 82, 0.13);
   --expense:       #8b5a3c;
   --expense-dim:   rgba(139, 90, 60, 0.12);
   --expense-color: #a86b47;
   --warning:       #b8860b;
 
-  --border:        rgba(61, 84, 54, 0.14);
-  --border-strong: rgba(61, 84, 54, 0.28);
-  --border-focus:  rgba(61, 84, 54, 0.55);
+  --border:        rgba(92, 138, 82, 0.16);
+  --border-strong: rgba(92, 138, 82, 0.32);
+  --border-focus:  rgba(92, 138, 82, 0.58);
 
   /* ── Sidebar ── */
   --sidebar-w:           260px;
@@ -118,8 +118,8 @@ body::before {
   top: 0; left: 0;
   height: 100vh;
   width: var(--sidebar-w);
-  background: var(--moss-dark);
-  border-right: 1px solid rgba(255,255,255,0.06);
+  background: var(--moss);
+  border-right: 1px solid rgba(255,255,255,0.10);
   display: flex;
   flex-direction: column;
   z-index: 200;
@@ -977,13 +977,13 @@ form .form-row {
 }
 
 .btn-primary {
-  background: var(--moss-dark);
-  color: var(--bone-light);
+  background: var(--moss);
+  color: #fff;
   border: 1px solid transparent;
 }
 .btn-primary:hover {
-  background: var(--moss);
-  box-shadow: 0 6px 20px rgba(61,84,54,0.28);
+  background: var(--moss-mid);
+  box-shadow: 0 6px 20px rgba(92,138,82,0.30);
   transform: translateY(-1px);
 }
 .btn-primary:active { transform: translateY(0); }
@@ -1064,23 +1064,27 @@ form .form-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 18px;
+  padding: 14px 20px;
   background: var(--moss-dark);
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.10);
   border-radius: var(--r-md);
-  box-shadow: 0 8px 32px rgba(26,35,24,0.3);
+  box-shadow: 0 8px 32px rgba(46,74,42,0.25);
   font-size: 13px;
-  color: var(--bone-light);
+  color: #fff;
   animation: slideIn 0.3s var(--ease);
   max-width: 340px;
   min-width: 240px;
   font-family: var(--font-mono);
-  font-weight: 300;
+  font-weight: 400;
 }
 
-.toast.success { border-left: 3px solid var(--moss-pale); }
-.toast.error   { border-left: 3px solid var(--expense-color); }
-.toast.info    { border-left: 3px solid var(--bone-deep); }
+.toast.success {
+  background: var(--moss);
+  border-left: 4px solid var(--moss-pale);
+  box-shadow: 0 8px 32px rgba(92,138,82,0.35), 0 0 0 1px rgba(204,232,194,0.2);
+}
+.toast.error   { border-left: 4px solid var(--expense-color); }
+.toast.info    { border-left: 4px solid var(--bone-deep); }
 
 .toast i { font-size: 17px; flex-shrink: 0; }
 .toast.success i { color: var(--moss-pale); }
@@ -1177,7 +1181,7 @@ form .form-row {
    DECORATIVE HERO BANNER (dashboard top)
    ═══════════════════════════════════════════════ */
 .dashboard-hero {
-  background: var(--moss-dark);
+  background: var(--moss);
   border-radius: var(--r-lg);
   padding: 28px 32px;
   margin-bottom: 24px;
@@ -1186,7 +1190,7 @@ form .form-row {
   justify-content: space-between;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(181,204,159,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
 }
 
 .dashboard-hero::before {

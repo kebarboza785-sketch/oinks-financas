@@ -17,9 +17,58 @@ const firebaseConfig = {
   appId:             "SEU_APP_ID"
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+let db = null;
+let firestoreAvailable = false;
+
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+} catch(e) {
+  console.warn('Firebase init failed, using local storage:', e);
+}
+
 const COL = 'transactions';
+
+/* ─────────────────────────────────────────────
+   LOCAL STORAGE FALLBACK
+   ───────────────────────────────────────────── */
+const LOCAL_KEY = 'oinks_transactions';
+
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); } catch { return []; }
+}
+
+function saveLocal(data) {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
+}
+
+function addLocal(record) {
+  const list = loadLocal();
+  const id = 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  list.unshift({ id, ...record });
+  saveLocal(list);
+  return id;
+}
+
+function updateLocal(id, data) {
+  const list = loadLocal();
+  const idx  = list.findIndex(t => t.id === id);
+  if (idx !== -1) { list[idx] = { ...list[idx], ...data }; saveLocal(list); }
+}
+
+function deleteLocal(id) {
+  saveLocal(loadLocal().filter(t => t.id !== id));
+}
+
+/* ─────────────────────────────────────────────
+   FIRESTORE COM TIMEOUT
+   ───────────────────────────────────────────── */
+function withTimeout(promise, ms = 6000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+  ]);
+}
 
 /* ─────────────────────────────────────────────
    ESTADO GLOBAL
@@ -138,18 +187,38 @@ function navigateTo(sectionId) {
    FIRESTORE — LISTENER EM TEMPO REAL
    ───────────────────────────────────────────── */
 function startListener() {
-  unsubscribe = db.collection(COL)
-    .orderBy('date', 'desc')
-    .onSnapshot(
-      (snapshot) => {
-        allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        refreshAll();
-      },
-      (err) => {
-        console.error('Firestore error:', err);
-        showToast('Erro ao conectar com o banco de dados.', 'error');
-      }
-    );
+  // Try Firestore with timeout; fall back to localStorage
+  if (db) {
+    const timeout = setTimeout(() => {
+      console.warn('Firestore unreachable, switching to local storage.');
+      firestoreAvailable = false;
+      allTransactions = loadLocal();
+      refreshAll();
+    }, 5000);
+
+    unsubscribe = db.collection(COL)
+      .orderBy('date', 'desc')
+      .onSnapshot(
+        (snapshot) => {
+          clearTimeout(timeout);
+          firestoreAvailable = true;
+          allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          refreshAll();
+        },
+        (err) => {
+          clearTimeout(timeout);
+          console.error('Firestore error:', err);
+          firestoreAvailable = false;
+          allTransactions = loadLocal();
+          refreshAll();
+          showToast('Firebase indisponível — usando armazenamento local.', 'info');
+        }
+      );
+  } else {
+    firestoreAvailable = false;
+    allTransactions = loadLocal();
+    refreshAll();
+  }
 }
 
 /* ─────────────────────────────────────────────
@@ -190,11 +259,11 @@ function updateKPIs() {
    CHART.JS — PALETA OINK'S (MOSS & BONE)
    ───────────────────────────────────────────── */
 const C = {
-  income:  '#4f6b43',
+  income:  '#5c8a52',
   expense: '#a86b47',
-  accent:  '#6b8c5a',
-  grid:    'rgba(61,84,54,0.08)',
-  text:    '#8aab74'
+  accent:  '#74a468',
+  grid:    'rgba(92,138,82,0.10)',
+  text:    '#8fbe82'
 };
 
 Chart.defaults.color = C.text;
@@ -464,17 +533,30 @@ financeForm.addEventListener('submit', async (e) => {
     category:    document.getElementById('category').value,
     date:        document.getElementById('date').value,
     notes:       document.getElementById('notes').value.trim(),
-    createdAt:   firebase.firestore.FieldValue.serverTimestamp()
+    createdAt:   new Date().toISOString()
   };
 
   try {
-    await db.collection(COL).add(data);
-    showToast('Registro salvo com sucesso!', 'success');
+    if (firestoreAvailable && db) {
+      const fsData = { ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+      await withTimeout(db.collection(COL).add(fsData));
+    } else {
+      addLocal(data);
+      allTransactions = loadLocal();
+      refreshAll();
+    }
+    showToast('✓ Registro salvo com sucesso!', 'success');
     resetForm();
     navigateTo('transactions');
   } catch (err) {
     console.error(err);
-    showToast('Erro ao salvar registro.', 'error');
+    // Fallback to local if Firestore timed out or failed
+    addLocal(data);
+    allTransactions = loadLocal();
+    refreshAll();
+    showToast('✓ Registro salvo localmente!', 'success');
+    resetForm();
+    navigateTo('transactions');
   } finally {
     setLoading(false);
   }
@@ -566,16 +648,27 @@ editForm.addEventListener('submit', async (e) => {
     category:    document.getElementById('editCategory').value,
     date:        document.getElementById('editDate').value,
     notes:       document.getElementById('editNotes').value.trim(),
-    updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
+    updatedAt:   new Date().toISOString()
   };
 
   try {
-    await db.collection(COL).doc(id).update(data);
-    showToast('Registro atualizado!', 'success');
+    if (firestoreAvailable && db && !id.startsWith('local_')) {
+      const fsData = { ...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      await withTimeout(db.collection(COL).doc(id).update(fsData));
+    } else {
+      updateLocal(id, data);
+      allTransactions = loadLocal();
+      refreshAll();
+    }
+    showToast('✓ Registro atualizado!', 'success');
     closeEditModal();
   } catch (err) {
     console.error(err);
-    showToast('Erro ao atualizar registro.', 'error');
+    updateLocal(id, data);
+    allTransactions = loadLocal();
+    refreshAll();
+    showToast('✓ Registro atualizado localmente!', 'success');
+    closeEditModal();
   }
 });
 
@@ -604,11 +697,20 @@ function closeConfirmModal() {
 confirmDelete.addEventListener('click', async () => {
   if (!deleteTargetId) return;
   try {
-    await db.collection(COL).doc(deleteTargetId).delete();
+    if (firestoreAvailable && db && !deleteTargetId.startsWith('local_')) {
+      await withTimeout(db.collection(COL).doc(deleteTargetId).delete());
+    } else {
+      deleteLocal(deleteTargetId);
+      allTransactions = loadLocal();
+      refreshAll();
+    }
     showToast('Registro excluído.', 'info');
   } catch (err) {
     console.error(err);
-    showToast('Erro ao excluir registro.', 'error');
+    deleteLocal(deleteTargetId);
+    allTransactions = loadLocal();
+    refreshAll();
+    showToast('Registro excluído.', 'info');
   } finally {
     closeConfirmModal();
   }
